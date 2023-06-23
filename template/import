@@ -24,7 +24,7 @@ init_db_dir=$root_dir/init_db
 # prepare tables
 
 echo "Preparing tables..."
-psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/00_make_tables.sql
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/init_db/00_make_tables.sql
 
 # import data
 echo "Importing edges and nodes..."
@@ -37,11 +37,11 @@ psql --host $host --port $port --username $user --dbname $dbname \
 # import functions
 
 echo "Preprocessing graph..."
-psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/02_preprocess_graph.sql
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/init_db/02_preprocess_graph.sql
 
 echo "Importing functions..."
-psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/03_route.sql
-psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/04_edit_topology.sql
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/init_db/03_route.sql
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/init_db/04_edit_topology.sql
 
 echo "Done."
 
