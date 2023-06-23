@@ -591,6 +591,20 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION delete_node() RETURNS TRIGGER AS
+$$
+DECLARE
+    _ref_edge_ids INT[];
+BEGIN
+    -- don't actually delete
+    UPDATE ${table}_vertices_pgr SET topo_removed = true WHERE id = OLD.id;
+    -- we just need to get ids of referencing edges
+    SELECT array_agg(id) INTO _ref_edge_ids FROM ${table} WHERE source = old.id OR target = old.id;
+    UPDATE ${table} SET topo_removed = TRUE WHERE id = ANY (_ref_edge_ids);
+    RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER tr
     BEFORE INSERT
     ON ${table}
@@ -613,3 +627,10 @@ CREATE OR REPLACE TRIGGER tr_update_node
     WHEN (PG_TRIGGER_DEPTH() = 0)
 EXECUTE PROCEDURE __test_node_update_trigger();
 
+DROP TRIGGER IF EXISTS tr_delete_node ON ${table}_vertices_pgr;
+CREATE OR REPLACE TRIGGER tr_delete_node
+    BEFORE DELETE
+    ON ${table}_vertices_pgr
+    FOR EACH ROW
+    WHEN (PG_TRIGGER_DEPTH() = 0)
+EXECUTE PROCEDURE delete_node();
