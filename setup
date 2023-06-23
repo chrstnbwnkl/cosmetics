@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# check if osm4routing is installed 
+
+
+# get geofabrik file identifier as only arg for now
+
+# download file
+
+# run osm4routing, copy data to data dir
+
+
+# copy template scripts to initdb dir 
+
+# that's it, now the user can spin up postgis using docker-compose or psql to import in own db
+
+root_dir=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
+if ! [ "$( command -v osm4routing)" ]; then
+    printf "osm4routing not installed. Please install using 'cargo install osm4routing'.\nSee instructions on installing cargo here: https://doc.rust-lang.org/cargo/getting-started/installation.html\nexiting...\n" >&2 
+    exit 1
+fi
+
+if ! [ $# -gt 1 ]; then
+ printf "Please provide a path to an OSM file and a name to be used as the table name for that dataset.\n" >&2
+ exit 1
+fi
+
+path=$1
+name=$2
+
+echo "Creating edges and nodes..."
+mkdir -p $root_dir/data 
+cd $root_dir/data
+
+osm4routing $path
+
+mkdir -p $root_dir/init_db
+
+for f in $root_dir/template/*.sql; do 
+  filebase=$(basename $f)
+  table=$name envsubst < $f >> $root_dir/init_db/$filebase
+done
+
