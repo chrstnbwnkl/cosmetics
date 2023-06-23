@@ -1,0 +1,21 @@
+networks:
+    cosmetics:
+
+services:
+    postgis:
+        image: kartoza/postgis:14-3.2
+        container_name: cosmetics-postgis
+        volumes:
+          - $PWD/init_db/:/docker-entrypoint-initdb.d
+          - $PWD/:/app
+        environment:
+          - ALLOW_IP_RANGE=0.0.0.0/0
+          - POSTGRES_MULTIPLE_EXTENSIONS=postgis,pgrouting
+          - POSTGRES_USER=grimpo
+          - POSTGRES_PASS=safepass
+          - POSTGRES_DBNAME=gis
+        networks:
+          - cosmetics
+        ports:
+          - 5564:5432
+

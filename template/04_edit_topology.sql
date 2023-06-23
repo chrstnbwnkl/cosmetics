@@ -1,4 +1,4 @@
-DROP FUNCTION snap_point_to_network;
+DROP FUNCTION IF EXISTS snap_point_to_network;
 CREATE OR REPLACE FUNCTION snap_point_to_network(
     IN point GEOMETRY,
     IN snap_distance DOUBLE PRECISION,
@@ -50,10 +50,6 @@ DECLARE
     _out_line GEOMETRY(linestring);
 BEGIN
 
-    /*    SELECT arr[2:ARRAY_LENGTH(arr, 1) - 1]
-        INTO _out_line
-        FROM (SELECT ARRAY_AGG(geom) AS arr FROM st_dumppoints(line)) sq;
-    */
     SELECT st_removepoint(
                    st_removepoint(
                            line, st_npoints(line) - 1
@@ -68,7 +64,7 @@ Removes the first and last points from a line. Does not check whether line consi
 points.
 ';
 
-DROP FUNCTION snap_line_to_network;
+DROP FUNCTION IF EXISTS snap_line_to_network;
 CREATE OR REPLACE FUNCTION snap_line_to_network(
     IN line GEOMETRY,
     IN snap_distance DOUBLE PRECISION,
@@ -108,7 +104,7 @@ It first snaps the start and endpoint to the nearest point on the nearest edge, 
 It then checks, whether the start/endpoint can further be snapped to a vertex, using the same snapping tolerance.
 ';
 
-DROP FUNCTION new_vertex(point GEOMETRY, snapping_tolerance DOUBLE PRECISION, snap BOOL);
+DROP FUNCTION IF EXISTS new_vertex(point GEOMETRY, snapping_tolerance DOUBLE PRECISION, snap BOOL);
 CREATE OR REPLACE FUNCTION new_vertex(
     IN point GEOMETRY,
     IN snapping_tolerance DOUBLE PRECISION,
@@ -205,25 +201,6 @@ Returns a table with columns (start fraction, end fraction, geometry), where eac
 are relative to the original LineString geometry.
 ';
 
--- Example
-/*DROP TABLE IF EXISTS __debug_topo_editing;
-WITH newGeom as (SELECT st_setsrid(
-                                st_geomfromgeojson(
-                                        '{ "type": "LineString", "coordinates": [ [20.2976705, 42.5341266], [20.2972365, 42.5325196] ] }'
-                                    ), 4326) as the_geom)
-SELECT s.* INTO __debug_topo_editing FROM newGeom n, split_new_edge(n.the_geom) s;
-SELECT * FROM __debug_topo_editing;
-*/
-
--- Example using a non-intersecting line
-/*DROP TABLE IF EXISTS __debug_topo_editing;
-WITH newGeom as (SELECT st_setsrid(
-                                st_geomfromgeojson(
-                                        '{ "type": "LineString", "coordinates": [ [20.2973005, 42.5339257], [20.2966830,42.5329500] ] }'
-                                    ), 4326) as the_geom)
-SELECT s.* INTO __debug_topo_editing FROM newGeom n, split_new_edge(n.the_geom) s;
-SELECT st_length(geom) FROM __debug_topo_editing;
-*/
 
 DROP FUNCTION IF EXISTS create_from_existing_edge(new_geom GEOMETRY, new_source BIGINT, new_target BIGINT,
                                                   length_fraction DOUBLE PRECISION, old_id BIGINT);
@@ -397,13 +374,6 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-DROP TABLE IF EXISTS __test_topology_editing;
-CREATE TABLE __test_topology_editing
-(
-    id   SERIAL PRIMARY KEY,
-    geom GEOMETRY(LineString, 4326)
-);
-
 CREATE OR REPLACE FUNCTION __test_topology_edit_trigger()
     RETURNS TRIGGER
 AS
@@ -413,16 +383,6 @@ BEGIN
     -- perform the add_to_topology function
     -- PERFORM restore_topology();
     PERFORM add_to_topology(new.geom, TRUE);
-    DROP TABLE IF EXISTS __debug_route;
-    CREATE TABLE __debug_route AS
-        (SELECT d.*, e.geom
-         FROM pgr_dijkstra(
-                      'SELECT id, source, target, length as cost FROM ${table}',
-                      6499611357,
-                      1271884032
-                  ) d
-                  JOIN ${table} e ON d.edge = e.id);
-
     RETURN NULL;
 END
 $$ LANGUAGE plpgsql;
@@ -434,8 +394,6 @@ AS
 $$
 DECLARE
     _new_edge_ids      BIGINT[];
-    _source_isolated   BOOL;
-    _target_isolated   BOOL;
     _vertices_to_check BIGINT[];
     _isolated_vertices BIGINT[];
 BEGIN
@@ -541,7 +499,7 @@ BEGIN
 
         -- instead of moving the edited node, we mark it as deleted and connect
         -- the referencing edges to the merge candidate node instead (remember to update the geom as well!)
-        UPDATE ${table}_vertices_pgr SET topo_removed = true WHERE id = old.id;
+        UPDATE ${table}_vertices_pgr SET topo_removed = TRUE WHERE id = old.id;
         SELECT geom INTO _merge_geom FROM ${table}_vertices_pgr WHERE id = _merge_node[1];
         -- update edges
         IF _ref_edges_source IS NOT NULL THEN
@@ -635,11 +593,12 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER tr
     BEFORE INSERT
-    ON __test_topology_editing
+    ON ${table}
     FOR EACH ROW
+    WHEN (PG_TRIGGER_DEPTH() = 0)
 EXECUTE PROCEDURE __test_topology_edit_trigger();
 
-DROP TRIGGER tr_update ON ${table};
+DROP TRIGGER IF EXISTS tr_update ON ${table};
 CREATE OR REPLACE TRIGGER tr_update
     BEFORE UPDATE
     ON ${table}

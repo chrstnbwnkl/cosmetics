@@ -1,3 +1,4 @@
 data
 *.pbf
 init_db
+import.sh

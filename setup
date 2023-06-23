@@ -39,6 +39,9 @@ mkdir -p $root_dir/init_db
 
 for f in $root_dir/template/*.sql; do 
   filebase=$(basename $f)
-  table=$name envsubst < $f >> $root_dir/init_db/$filebase
+  table=$name envsubst < $f > $root_dir/init_db/$filebase
 done
+
+# lastly, create an import script for importing into existing PostGIS instance
+table=$name data_path=$root_dir/data envsubst < $root_dir/template/import > $root_dir/import.sh
 

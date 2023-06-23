@@ -44,7 +44,7 @@ CREATE OR REPLACE FUNCTION route_ab(
             (
                 DISTANCE DOUBLE PRECISION,
                 DURATION DOUBLE PRECISION,
-                THE_GEOM     GEOMETRY(LineString, 4326)
+                THE_GEOM     GEOMETRY
             )
     LANGUAGE plpgsql
 AS
@@ -82,7 +82,7 @@ DECLARE
     _truncated_geometry             GEOMETRY[];
     _truncated_source_ids           BIGINT[];
     _truncated_target_ids           BIGINT[];
-    _return_geom                    GEOMETRY(LineString, 4326);
+    _return_geom                    GEOMETRY;
     _avoid_blocks_same_edge_trivial BOOLEAN DEFAULT FALSE;
     _avoid_blocks_same_node_trivial BOOLEAN DEFAULT FALSE;
     _avoid_edge_ix                  INT;
@@ -468,9 +468,3 @@ BEGIN
 END
 $$;
 
-
--- test
-SELECT * FROM route_ab(
-               st_setsrid(st_makepoint(20.285683, 42.555843), 4326),---83.079682, 42.398064,
-               st_setsrid(st_makepoint(20.2940857, 42.5301562), 4326),---83.078242, 42.397758,
-               '{}', 0.000001);

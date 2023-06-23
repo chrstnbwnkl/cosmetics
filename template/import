@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+
+while [ "$#" -gt 0 ]
+do case $1 in
+    -h|--host) host=$2
+    shift;; 
+    -p|--port) port=$2
+    shift;; 
+    -U|--username) user=$2
+    shift;;
+    -d|--dbname) dbname=$2
+    shift;;
+    *) echo "Unknown parameter passed: $1"
+    exit 1;;
+esac
+shift
+done
+
+# import sql scripts
+root_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+init_db_dir=$root_dir/init_db
+
+# prepare tables
+
+echo "Preparing tables..."
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/00_make_tables.sql
+
+# import data
+echo "Importing edges and nodes..."
+psql --host $host --port $port --username $user --dbname $dbname \
+  -c "\copy ${table}_vertices_pgr FROM '${data_path}/nodes.csv' CSV DELIMITER ',' HEADER;"
+
+psql --host $host --port $port --username $user --dbname $dbname \
+  -c "\copy ${table} FROM '${data_path}/edges.csv' CSV DELIMITER ',' HEADER;"
+
+# import functions
+
+echo "Preprocessing graph..."
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/02_preprocess_graph.sql
+
+echo "Importing functions..."
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/03_route.sql
+psql --host $host --port $port --username $user --dbname $dbname -f $root_dir/04_edit_topology.sql
+
+echo "Done."
+
+
