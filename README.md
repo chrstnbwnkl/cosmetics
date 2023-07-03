@@ -4,6 +4,9 @@ A template for loading a noded OSM street network data into PostGIS — and star
 
 To learn more about the editing capabilities, please check out my 2023 FOSS4G presentation about editing pgRouting topologies.
 
+> Note: for now, this is only tested on Linux and may or may not work on macOS. Accepting pull requests for a Windows/Powershell port of the setup script :-)
+
+
 ## Getting started
 
 To start editing your OSM extract of choice, you need to follow these steps:
