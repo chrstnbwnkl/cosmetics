@@ -333,7 +333,7 @@ BEGIN
             END IF;
             INSERT INTO ${table}(geom, source, target, topo_added, length)
             VALUES (_final_geom, _start_id, _end_id, TRUE,
-                    st_length(_final_geom))
+                     ST_LengthSpheroid(_final_geom, 'SPHEROID["WGS 84",6378137,298.257223563]'))
             RETURNING id::BIGINT INTO _new_id;
 
             -- we preserve the id of the freshly inserted end vertex, so we can use it as a starting point
